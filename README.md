@@ -19,11 +19,11 @@ GARBA Moussa <br>
 <h2>Research Question</h2>
 
 
-Are counties with a higher concentration of super-spreader businesses associated with increased risk of COVID-19 transmission?
+COVID-19 Impact on Education?
  
-### Aim 1: Classify businesses into super-spreaders and not super-spreaders based on frequency and duration of visits pre-pandemic.
+### Aim 1: exploratory data analysis  & interpretation of categorical explanatory variables.
 
-### Aim 2: Identify association between counties with higher super-spreaders and COVID-19 cases.
+### Aim 2:  interpretation and comparison of the effects from models for non-linear outcomes.
 
 ## Datasets
 
@@ -55,4 +55,4 @@ Who conducted the survey? UNESCO, UNICEF, and the World Bank jointly launched an
 - Python 3
 - BigQuery 
 - Stata 14
-- Tableau
+- R 
