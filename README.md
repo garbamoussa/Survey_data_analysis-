@@ -14,7 +14,7 @@ Survey data analysis (Survey On National Education Responses To COVID-19 School 
 <h4>Author:</h4>
 
 GARBA Moussa <br>
-Aalok Thakkar
+
 
 <h2>Research Question</h2>
 
