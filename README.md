@@ -1,6 +1,6 @@
 
 
-![Sample survey ](Visualizations/images/plot_q7_online-2.png "Legend")
+![Survey sample for school closures related to the COVID-19  pandemic by region](Visualizations/images/plot_survey-1.png "Legend")
 
 
 
