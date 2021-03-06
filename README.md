@@ -1,6 +1,6 @@
 
 Survey data analysis (Survey On National Education Responses To COVID-19 School Closures)
-![]( "Legend")
+![Sample survey ](Visualizations/images/plot_q7_online-2.png "Legend")
 
 
 
