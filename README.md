@@ -34,25 +34,24 @@ Who conducted the survey? UNESCO, UNICEF, and the World Bank jointly launched an
 
 
 * [World Bank data ](https://datacatalog.worldbank.org/dataset/survey-national-education-responses-covid-19-school-closures) - (Survey data) 
-* [UNESCO](http://tcg.uis.unesco.org/survey-education-covid-school-closures/) - (To get data and school question from )
+* [UNESCO](http://tcg.uis.unesco.org/survey-education-covid-school-closures/) - (To get data and school question from UNESCO )
 
 
 
 ## Methodology 
 
-* Aim 1: Classify businesses into super-spreaders and not super-spreaders based on frequency and duration of visits pre-pandemic.
+* Aim 1: 
     
-* Aim 2: Identify association between counties with higher density of super-spreaders and COVID-19 cases.
+* Aim 2: 
 
-    Negative Binomial Regression 
+    
     
 ## Presentation link 
 
-- [TrackD_Team006_Final](https://github.com/garbamoussa/Reopening-of-super-spreader-businesses-and-risk-of-COVID-19-transmission-/blob/master/visualizations/TrackD_Team006_Final.pdf)
+- [TrackD_Team006_Final]()
 
 ## Prerequisites for technical implementation 
 
-- Python 3
-- BigQuery 
-- Stata 14
 - R 
+- Stata 14
+
