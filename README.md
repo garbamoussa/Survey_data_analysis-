@@ -1,6 +1,6 @@
 
 
-![Survey sample for school closures related to the COVID-19  pandemic by region](Visualizations/images/plot_survey-1.png "Legend")
+![Survey sample for school closures related to the COVID-19  pandemic by region](Visualizations/images/plot_q6_radio_pp-1.png "Legend")
 
 
 
@@ -35,6 +35,9 @@ Who conducted the survey? UNESCO, UNICEF, and the World Bank jointly launched an
 
 * [World Bank data ](https://datacatalog.worldbank.org/dataset/survey-national-education-responses-covid-19-school-closures) - (Survey data) 
 * [UNESCO](http://tcg.uis.unesco.org/survey-education-covid-school-closures/) - (To get data and school question from UNESCO )
+
+![Survey sample for school closures related to the COVID-19  pandemic by region](Visualizations/images/plot_survey-1.png "Legend")
+![Percentage of missing values numeriques variables](Visualizations/images/present_missing-1.png "Legend")
 
 
 
