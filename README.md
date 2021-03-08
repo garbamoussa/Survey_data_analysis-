@@ -51,7 +51,7 @@ Who conducted the survey? UNESCO, UNICEF, and the World Bank jointly launched an
     
 ## Presentation link 
 
-- [Survey sample analysis]()
+- [Survey sample analysis](https://rpubs.com/garba_m/735779)
 
 ## Prerequisites for technical implementation 
 
