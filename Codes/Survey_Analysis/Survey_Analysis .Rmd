@@ -1,0 +1,1224 @@
+
+---
+output:
+  html_document:
+    self_contained: false
+---
+
+
+
+
+
+```{r 'setup', echo = FALSE, cache = FALSE}
+knitr::opts_chunk$set(fig.path = "/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/images/", dev = c('png'),
+        fig.align = 'center', fig.height = 5, fig.width = 8.5, 
+        pdf.options(encoding = "ISOLatin9.enc")) 
+```
+
+
+
+## Introduction 
+
+This survey by the United Nations Educational, Scientific and Cultural Organization (UNESCO), the United Nations Children's Fund (UNICEF) and the World Bank seeks to collect information on national education responses to school closures related to the COVID-19 pandemic. The questionnaire is designed for Ministry of Education officials at central or decentralized level in charge of school education. The questionnaire does not cover higher education or technical and vocational education and training. Analysis of results will allow for policy learning across the diversity of country settings in order to better inform local/national responses and prepare for the reopening of schools.
+Given that the survey will be run monthly to ensure that the latest impact and responses are captured, we would suggest that a singular focal point within the ministry is appointed to collect and submit responses on behalf of the country (ideally, a team of two members to ensure response continuity).
+In light of the current education crisis, the COVID-19 education response coordinated by UNESCO with our partners is deemed urgent.
+
+[Survey On National Education Responses To COVID-19 School Closures](https://datacatalog.worldbank.org/dataset/survey-national-education-responses-covid-19-school-closures) by \cite{PeerJ:Survey On National Education Responses To COVID-19 School Closures} 
+
+
+
+
+
+
+## Author Affiliations 
+
+
+
+## Document Options
+
+
+
+
+
+## References 
+
+
+## Inline R Code 
+
+
+```{r }
+
+
+pkgs <- c(  "sqldf", "SmartEDA", "psych",  "tidyr", "mosaicData", "carData",
+          "VIM", "scales", "treemapify",  "ggmap", "choroplethr",
+          "choroplethrMaps", "CGPfunctions",
+          "ggcorrplot", "visreg",
+          "gcookbook", "forcats",
+          "survival", "survminer", "robCompositions",
+          "ggalluvial", "ggridges", "wordcloud2", "highcharter",
+          "GGally", "superheat", "ggalluvial", "ggeffects", "viridis", "countrycode",
+          "waterfalls", "factoextra",
+          "networkD3", "ggthemes", "packcircles",
+          "hrbrthemes", "ggpol", "ggbeeswarm", "naniar", "missMDA", "mice", "Amelia", "FactoMineR", "car", "DescTools", "relaimpo", "MVN", "psych")
+
+install.packages(pkgs, repos = "http://cran.us.r-project.org")
+
+```
+
+
+
+
+
+```{r}
+devtools::install_github('selcukorkmaz/MVN')
+```
+
+
+
+
+```{r }
+library(readr)
+library(readxl)
+library(tidyverse) # metapackage of all tidyverse packages
+library(naniar)
+library(FactoMineR)
+library(missMDA)
+library(SnowballC) # for stemming
+library(readxl) # for read xlsx file 
+library(plotly)
+library(kableExtra)
+library(ggpubr)
+library(corrr)
+library(DataExplorer)
+library(SmartEDA)
+library(GGally) #masks dbplyr::nasa
+library(relaimpo)
+library(car)
+library(QuantPsyc)
+library(broom)
+library(survey)
+library(stringr)
+library(lubridate)
+library(ggforce)
+library(reshape2)
+library(rpart)
+library(corrplot)
+library(lattice)
+library(lava)
+library(caret)
+library(RANN)
+library(psych) 
+library(wordcloud2)
+library(gridExtra)
+
+library(ggalluvial)
+library(ggeffects)
+library(viridis)
+library(countrycode)
+library(highcharter)
+
+
+
+library(ggthemes) # visualization
+library(scales) # visualization
+library(geosphere) #distance cal
+library(jsonlite)
+library(data.table)
+library(corrplot)
+library(tidytext)
+library(rpart)
+library(xgboost)
+library(glmnet) #regularization
+library(plotly) # Interactive data visualizations
+library(party)
+library(randomForest)
+library(htmlwidgets)
+library(IRdisplay)
+library(packcircles)
+library(tm)
+library(wordcloud)
+library(MVN)
+
+library(DAAG)
+
+
+```
+
+
+
+## import data and subset  numeric, character and date 
+
+```{r survey education data and main questions}
+ 
+data  <- read_excel("/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/response_final.xls", sheet = "Data")
+
+Variable_Name  <- read_excel("/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/response_final.xls", sheet = "Variable_Names")
+
+
+
+#change all the columns names and make easier to code
+ data <- janitor::clean_names(data) 
+ 
+ ### Convert column character to date 
+ 
+data$q1_pp_eo <- as.Date(data$q1_pp_eo,format="%m%d%y")
+data$q1_p_eo <- as.Date(data$q1_p_eo,format="%m%d%y")
+data$q1_ls_eo <- as.Date(data$q1_ls_eo,format="%m%d%y")
+data$q1_us_eo <- as.Date(data$q1_us_eo,format="%m%d%y")
+data$q3_adj_newenddate <- as.Date(data$q3_adj_newenddate,format="%m%d%y")
+data$q3_adj_newstartdate <- as.Date(data$q3_adj_newstartdate,format="%m%d%y")
+
+## extract numeric variables 
+num_var <- data %>% 
+  #purrr::map_lgl(is.numeric)
+  dplyr::select(,where(is.numeric))
+
+
+write.csv(num_var,file = "/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/num_var.csv")
+## extract character variables 
+char_var <- data %>% 
+  dplyr::select(where(is.character))
+
+write.csv(char_var,file = "/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/char_var.csv")
+## extract date variables 
+date_var <- data %>% 
+  dplyr::select(where(is.Date))
+write.csv(date_var,file = "/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/date_var.csv")
+```
+
+
+
+
+
+
+## display some data and  data quality 
+
+```{r}
+head(data)
+```
+
+## Survey Questions analysis 
+
+
+```{r}
+# get only columns with the data type "character" 
+character_columns <- Variable_Name[, sapply(Variable_Name, class) == "character"]
+
+# look at these columns
+str(character_columns)
+
+```
+
+
+```{r}
+# select columns with "Main_Question" or "Variable_Name" in the name
+Q1 <- character_columns %>%
+  filter(str_detect(Variable_Name, "Q1_"))  %>%
+  group_by(Variable_Name) %>%
+ mutate(Main_Question = fct_explicit_na(Main_Question, na_level = "1. What are the current plans for reopening schools in your education system? [Select all that apply](Note: Partial/Gradual refers to territorial coverage; Phasing refers to progressive scheduling
+according to grade/age)."))
+write.csv(Q1,file = "/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/Q1.csv")
+head(Q1)
+
+```
+```{r}
+#let's check NA values for each predictors.
+
+for(i in 1:5){
+  print(sum(is.na(Variable_Name[,i])))
+}
+```
+
+
+```{r}
+head(Variable_Name)
+```
+
+```{r}
+colnames(Variable_Name)
+```
+
+
+```{r}
+levels(factor(Variable_Name$Main_Question))
+```
+
+
+```{r}
+#xtabs(~mydata_retweeted$airline + mydata_retweeted$airline_sentiment ,data=mydata_retweeted )
+#prop.table(table(mydata_retweeted$airline,mydata_retweeted$airline_sentiment),1)
+```
+
+
+```{r}
+
+# Text analysis
+tryToLower <- function(x){
+  # return NA when there is an error
+  y = NA
+  # tryCatch error
+  try_error = tryCatch(tolower(x), error = function(e) e)
+  # if not an error
+  if (!inherits(try_error, 'error'))
+    y = tolower(x)
+  return(y)
+}
+
+textdata <- Variable_Name$Main_Question
+textdata <- gsub("(RT|via)((?:\\b\\W*@\\w+)+)", "", textdata) # remove retweet entities
+textdata <- gsub("@\\w+", "", textdata) # remove at people
+textdata <- gsub("[[:punct:]]", "", textdata) # remove punctuation
+textdata <- gsub("[[:digit:]]", "", textdata) # remove numbers
+textdata <- gsub("http\\w+", "", textdata) # remove http links
+textdata <- gsub("[\t]", "", textdata) # remove tab spaces
+textdata <- gsub("[ ]{2,}", " ", textdata) # remove mulitple spaces
+textdata <- gsub("^\\s+|\\s+$", "", textdata) # remove unnecessary spaces
+textdata <- sapply(textdata, tryToLower)
+```
+
+
+
+```{r wordcloud_survey}
+
+# Removing stop words (including the english one as our dataset also includes english tweets)
+textdata <- removeWords(textdata, c(stopwords("english")))
+corpus <- Corpus(VectorSource(textdata))
+dtm <- DocumentTermMatrix(corpus)
+dtms <- removeSparseTerms(dtm, 0.995) # Remove terms with sparsity >= 95%
+sparseData <- as.data.frame(as.matrix(dtms))
+colnames(dtms) <- make.names(colnames(dtms))
+# Most common word in all tweets
+names(sparseData)[which.max(colSums(sparseData))]
+
+# General wordcloud over all tweets
+wordcloud(colnames(sparseData), 
+          colSums(sparseData), 
+          scale=c(4, 0.5),
+          random.color=FALSE, 
+          colors = c("#6BAED6", "#4292C6", "#2171B5", "#08519C", "#08306B"),
+          rot.per = 0.5) # rot.per = percentage of words written at a 90 degree angle
+
+
+```
+
+
+
+
+```{r }
+
+num_var %>% 
+  print(n = 10)
+```
+
+
+
+
+```{r}
+char_var %>% 
+  print(n = 10)
+
+```
+
+
+
+```{r}
+date_var %>% 
+  print(n = 10)
+```
+
+
+
+
+```{r}
+glimpse(Variable_Name)
+```
+
+
+
+
+
+```{r }
+data %>% 
+  print(n = 10)
+```
+
+
+# Exploratory Data Analysis
+
+
+## Numeriques variables analysis 
+
+
+
+```{r}
+num_var %>% map_df(~(data.frame(n_distinct = n_distinct(.x),
+                                  class = class(.x))),
+                     .id = "variable")
+```
+
+
+
+
+## Unique value into each numeric variables 
+
+```{r }
+unique(num_var)
+
+```
+
+
+
+
+
+
+```{r}
+options(scipen=999)
+mytheme <- theme(axis.text.x=element_text(angle =90, size=8, vjust = 0.4),
+                  plot.title=element_text(size=16, vjust = 2, family="Georgia",face = "bold", margin = ggplot2::margin(0,20,0,0)),
+                  axis.title.y = element_text(margin = ggplot2::margin(0,20,0,0)),
+                  axis.title.x =element_text(size=12, vjust = -0.35, margin = ggplot2::margin(0,20,0,0)),
+                  plot.background = element_rect(fill = "#EDEFF7"),
+                  panel.background = element_rect(fill = "#EDEFF7" ),
+                  legend.background = element_rect(fill = "#EDEFF7"),
+                  legend.title = element_text(size = 10, family = "Arial", face = "bold"),
+                  legend.text = element_text(size = 8, family = "Arial"),
+                  panel.grid.major = element_line(size = 0.4, linetype = "solid", color = "#cccccc"),
+                  panel.grid.minor = element_line(size = 0),
+                  axis.ticks = element_blank(),
+                  plot.margin = unit(c(0.5, 1, 1, 1), "cm")
+)
+colors = c("#2E0142", "#D33E4F", "#F46D43" ,"#FDAE61", "#FEE08B", "#e7fe8b","#bcfe8b","#8bfeb1","#8bc4fe","#8b96fe","#ad8bfe","#d98bfe","#fe8bd1","#fe8b96")
+```
+
+
+
+
+
+```{r}
+ 
+pct_miss(num_var)
+```
+
+
+
+
+```{r}
+n_miss(num_var) 
+```
+
+
+
+### Data shape without missing value
+
+```{r}
+n_complete(num_var) 
+```
+
+
+### Display each missing value by row 
+
+```{r}
+as_shadow(num_var)
+```
+
+
+
+```{r}
+bind_shadow(num_var)
+```
+
+
+## Plot percentage for missing value for each variable 
+```{r}
+vis_miss(num_var, sort_miss = TRUE, warn_large_data=FALSE) 
+```
+
+
+
+```{r}
+as_tibble(num_var)
+```
+
+
+
+```{r }
+
+```
+
+
+## Dealing with missing values
+
+```{r plot_missing,  dev=c('png')}
+# Compute cases per year
+gg_miss_var(num_var)
+```
+
+
+
+```{r plot_radio_tv,  dev=c('png')}
+ggplot(data, aes(q6_radio_pp_yes, q6_radio_ls_yes)) +
+  geom_line(aes(group = q7_tv_yes_pp), color = "grey50") +
+  geom_point(aes(color = q6_tv_us_yes))
+```
+
+
+
+
+```{r}
+# Training dataset
+missing_data <- round(sum(is.na(num_var)) / nrow(data) * 100, 2)
+cat("% of missing values in the survey data  dataset: ", missing_data) 
+```
+
+
+
+
+
+
+
+
+```{r }
+library(praise)
+desc <- summary(num_var)
+data.frame(desc)
+#knitr::kable(head(desc[, 1:4]), "simple")
+```
+
+
+
+
+
+
+```{r}
+missing_num_var <- num_var %>%
+    gather(key = "key", value = "val") %>%
+    mutate(is.missing = is.na(val)) %>% #Mutate adds new variables and preserves existing
+    group_by(key, is.missing) %>%
+    summarise(num.missing = n()) %>% #n() mean summarize the result of the grouping by the number of rows in each group
+    filter(is.missing==T) %>% # from is.missing col filter val are true 
+    #select(is.missing) %>% # delect col is.missing
+    arrange(desc(num.missing)) 
+write.csv(missing_num_var,file = "/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/missing_num_var.csv") 
+missing_num_var
+```
+
+
+
+
+```{r missing_num_var,  dev=c('png')}
+missing_num_var %>%
+  ggplot() +
+    geom_bar(aes(x=key, y=num.missing), stat = 'identity') +
+  mytheme+labs(x='variable', y="number of missing values", title='Number of missing values numeric variables')+scale_fill_manual(values=colors)+theme(legend.position = "")
+
+```
+
+
+
+
+```{r present_missing,  dev=c('png')}
+missing.values <- num_var %>%
+  gather(key = "key", value = "val") %>%
+  mutate(isna = is.na(val)) %>%
+  group_by(key) %>% #GROUP BY clause in the SELECT statement without using aggregate functions then it would behave like DISTINCT clause
+  mutate(total = n()) %>%
+  group_by(key, total, isna) %>% 
+  summarise(num.isna = n()) %>%
+  mutate(pct = num.isna / total * 100)
+levels <- (missing.values  %>% filter(isna == T) %>%     
+           arrange(desc(pct)))$key
+percentage.plot <- missing.values %>%
+      ggplot() +
+        geom_bar(aes(x = reorder(key, desc(pct)), 
+                     y = pct, fill=isna), 
+                  stat = 'identity', alpha=0.8) +
+        scale_x_discrete(limits = levels) +
+        scale_fill_manual(name = "", 
+                          values = c('steelblue', 'tomato3'), 
+                          labels = c("Present", "Missing")) +
+        coord_flip() +
+        labs(title = "Percentage of missing values \n numeriques variables", 
+             x = 'Variable', y = "% of missing values")
+percentage.plot
+```
+
+
+
+
+
+```{r ggally_plot,  dev=c('png')}
+(pairsPlot = GGally::ggpairs(data = num_var,
+                    upper = "blank",
+                    diag = list(continuous = wrap("densityDiag")),
+                    lower = list(continuous = wrap(ggally_smooth_lm)),
+                    title = "Pairs Plot of school closures related to the COVID-19 pandemic"))
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+```
+
+
+
+```{r q7_online_yes_pp_histo,  dev=c('png')}
+# Construct a histogram of the q7_online_yes_pp
+ggplot(data = num_var, mapping = aes(x =q7_online_yes_pp)) +
+    geom_histogram() + mytheme+labs(title="q7_online_yes_pp histogram")+scale_fill_manual(values=colors)+theme(legend.position = "")
+```
+
+## Number of missing value for Water variable 
+
+```{r}
+n_miss(num_var$q7_online_yes_pp)
+```
+
+
+```{r}
+#data <- data[complete.cases(data), ]
+```
+
+```{r}
+df <- data %>%
+    group_by(iso3, countryname) %>%
+    mutate(q7_online_yes_pp = case_when(is.na(q7_online_yes_pp) ~ mean(q7_online_yes_pp, na.rm=TRUE),
+                               TRUE ~ as.numeric(q7_online_yes_pp) 
+                              )
+           )
+```
+
+
+```{r}
+
+
+data %>% 
+  group_by(iso3) %>% 
+  mutate(q7_online_yes_pp= ifelse(is.na(q7_online_yes_pp), mean(q7_online_yes_pp, na.rm=TRUE), q7_online_yes_pp))
+
+```
+
+
+
+```{r}
+
+DATA <- subset( data , !is.na( q7_online_yes_pp ) )
+# Specify a simple random sampling for apisrs
+data_design <- svydesign(data = DATA, weights = ~q7_online_yes_pp, q7_online_yes_p = ~q7_online_yes_p,  id = ~1)
+
+# Produce a summary of the design
+summary(data_design)
+```
+
+
+
+```{r}
+table_num_var  <- cbind(num_var,                                 
+                   rowSums = rowSums(num_var,na.rm = TRUE),
+                   rowMeans = rowMeans(num_var,na.rm = TRUE))
+
+write.csv(table_num_var,file = "/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/table_num_var.csv") 
+```
+
+
+
+
+```{r}
+column_means <- colMeans(num_var, na.rm = TRUE)         
+
+print(column_means)
+```
+
+With the column means in hand, we just need to subtract the column means from each row in an element-wise fashion. If you try to subtract a vector from a data frame, R will subtract it element-wise along the columns. Since we want to subtract the column means from each row, this is not what we want. One way to perform the desired subtraction would be to construct a numeric matrix of the same shape as our data frame, which each row set equal to the column means, and then subtract that matrix from our data.
+
+
+
+```{r}
+
+# Repeat the column means along the rows of a matrix
+center_matrix <- matrix( rep(column_means, nrow(num_var)),   
+                          nrow=nrow(num_var),
+                          ncol=ncol(num_var),
+                          byrow = TRUE)       # Construct row by row
+
+centered <- num_var - center_matrix     # Subtract column means
+
+head( centered )             # Check the new data set
+
+print(colMeans(centered, na.rm = TRUE))    # Check the new column means to confirm they are 0
+
+
+```
+
+
+```{r}
+centered <- data.frame(t(t(num_var) - column_means))
+
+print(colMeans(centered, na.rm = TRUE))
+```
+
+With zero-centered data, negative values are below average and positive values are above average.
+
+Now that the data is centered, we'd like to put it all on a common scale. One way to put data on a common scale is to divide by the standard deviation. Standard deviation is a statistic that describes the spread of numeric data. The higher the standard deviation, the further the data points tend to be spread away from the mean value. You can get standard deviations with the sd() function.
+
+
+
+```{r}
+# Get the standard deviation of the q3_increasewhenopen_specify column
+sd(centered$q3_increasewhenopen_specify,  na.rm = TRUE)
+```
+
+
+
+```{r}
+column_sds <- apply(centered,    # A matrix or data frame
+                    MARGIN = 2,  # Operate on rows(1) or columns(2)
+                    FUN = sd,na.rm = TRUE)    # Function to apply
+
+print(column_sds)                   # Check standard deviations
+```
+
+
+```{r}
+centered_scaled_NumVars <- data.frame(t(t(centered) / column_sds))
+write.csv(centered_scaled_NumVars,file = "/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/centered_scaled_NumVars.csv") 
+
+```
+
+
+
+
+```{r}
+auto_scaled_NVars <- scale(num_var,          # Numeric data object
+                    center=TRUE,    # Center the data?
+                    scale=TRUE)     # Scale the data?
+
+write.csv(auto_scaled_NVars,file = "/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/auto_scaled_NVars.csv")
+```
+
+## Highly Correlated Variables
+
+```{r}
+# Check the pairwise correlations of 6 variables
+cor(num_var[,1:6], use = "complete.obs")
+```
+A positive correlation implies that when one variable goes up the other tends to go up as well. Negative correlations indicate an inverse relationship: when one variable goes up the other tends to go down. A correlation near zero indicates negligible correlation while a correlation near -1 or 1 indicates a large negative or positive correlation.
+
+
+
+```{r}
+options(repr.plot.width=7, repr.plot.height=7)
+
+pairs(num_var[,1:10])
+```
+A scatter plot matrix creates pairwise scatter plots that let you visually inspect the relationships between pairs of variables. It can also help identify oddities in the data, such as variables like cyl that only take on values in a small discrete set.
+
+If you find highly correlated variables, there are a few things you can do including:
+
+Leave them be
+Remove one
+Combine them in some way
+
+## Imputing Missing Data
+
+```{r}
+#table(apply(num_var, 1, function(r) all(!(is.na(r)))))
+# use at max the amount of samples without NA as k
+num_var
+
+```
+
+```{r}
+impute <- preProcess(num_var, method=c("medianImpute"), na.remove = TRUE,k = 5)
+
+# Predict new values based on preprocessing
+num_var <- predict(impute, num_var)          
+
+summary(num_var$q6_radio_pp_yes)
+```
+
+
+
+```{r}
+#KNN Imputation:
+preProcess_num_var <- preProcess(num_var, method='medianImpute', na.remove = TRUE,k = 5)
+preProcess_num_var
+
+
+num_var_medianImpute <- predict(preProcess_num_var, newdata = num_var) 
+write.csv(num_var_medianImpute,file = "/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/num_var_medianImpute.csv")
+```
+
+
+
+```{r}
+num_var.model = preProcess(num_var, "medianImpute",na.remove = TRUE)
+num_var_pred = predict(num_var.model, num_var)
+
+write.csv(num_var_pred,file = "/Users/garbamoussa/Desktop/Bureau/R/SURVEY_Analysis/Data/num_var_pred.csv")
+```
+
+
+
+
+
+```{r}
+
+p_ind <- plot_ly(data=data[1:10,],
+             x= ~countryname(),
+             y= ~q6_radio_pp_yes,
+             type= "bar",
+             name= "q6_radio_p_yes",
+             marker=list(color="purple")) %>%
+  add_trace(y = ~ q6_radio_p_yes, 
+            name = "q6_radio_ls_yes",
+            marker = list(color = "#1f77b4")) %>%
+  add_trace(y = ~ q6_radio_ls_yes, 
+            name = "q6_radio_us_yes",
+            marker = list(color = "forestgreen")) %>%
+  
+  
+  layout(barmode = 'stack',
+         yaxis = list(title = "Total Cases", type = "log"),
+         xaxis = list(title = ""),
+         hovermode = "compare",
+         margin =  list(
+           # l = 60,
+           # r = 40,
+           b = 10,
+           t = 10,
+           pad = 2
+         )
+  )
+
+#ggplotly(p_ind)
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+percent <-function(col,tab=data){
+    tab %>% 
+    filter_(!col=="")%>%
+    group_by_(col)%>%
+    summarise(tot=n())%>%
+    mutate(percent=round(tot/sum(tot)*100))%>%
+    arrange(desc(tot))
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r plot_survey,  dev=c('png')}
+percent(col="region")%>%
+  filter(percent >0)%>% 
+  ggplot(aes(x=reorder(region,percent),y=percent,fill=region))+geom_bar(stat="identity") +
+  theme(
+    axis.title=element_blank(),
+    
+    panel.grid = element_blank(),
+        legend.position = "none" )+ geom_text( aes(x=region, y=percent, label=paste(percent,"%",sep="")), color="black", fontface="bold",vjust=0.7 )+scale_fill_manual(values=colors) +labs(title="Survey sample for school closures related to the COVID-19 \n pandemic by region ")+coord_flip()
+```
+
+
+
+
+
+
+
+
+```{r}
+
+summary(data$q7_online_yes_pp)
+
+
+
+```
+
+```{r plot_q7_online_yes_pp1,  dev=c('png')}
+data$q7_online_yes_pp[which(data$q7_online_yes_pp<0)]<-20
+data$q7_online_yes_pp[which(data$q7_online_yes_pp>100)]<-60
+summary(data$q7_online_yes_pp)
+ggplot(data,aes(x=q7_online_yes_pp))+geom_histogram(aes(y=..density..),fill="#62AB61")+geom_density(col="#3438BD",size=1)+mytheme+labs(x="q7_online_yes_pp",title="Distribution of q7_online_yes_pp")
+```
+
+
+
+```{r plot_q5,  dev=c('png') }
+data %>% ggplot(aes(x=q5,fill=q5))+geom_bar(stat="count")+mytheme+labs(title="Are there expectations that the next school year \n calendar will be affected?")+scale_fill_manual(values=colors)+theme(legend.position = "")
+```
+
+
+
+```{r plot_q5_region,  dev=c('png')}
+data %>%
+  dplyr::select(region, q5) %>%
+  group_by(region,q5) %>%
+  summarise(c=n()) %>%
+  ggplot(aes(x=q5,y=c,fill=region))+geom_bar(stat="identity",position="dodge")+mytheme+labs(title="region Counts vs Q5",y="count")+scale_fill_manual(values=colors)
+
+```
+
+
+
+```{r plot_q1_pp_nw,  dev=c('png')}
+options(repr.plot.width=5, repr.plot.height=5)
+data %>%
+  group_by(q1_pp_nw) %>%
+  summarise(tot=n()) %>%
+  mutate(percent=round(tot/sum(tot)*100)) %>%
+  arrange (desc(tot)) %>% 
+  filter(percent >0) %>% 
+  ggplot(aes(x=q1_pp_nw,y=percent,fill=q1_pp_nw)) + geom_bar(stat='identity',width = 1) + 
+  coord_polar(theta="y") + theme_void() + theme(axis.text.x=element_blank(),legend.position='bottom') +scale_fill_manual(values=colors)+
+  
+  geom_text(aes(y=c(50,0.02),label = paste(q1_pp_nw,": ",percent," %")),col="black")+labs(title="Q1_PP_NW")
+
+```
+
+
+```{r plot_q7_online,  dev=c('png')}
+
+options(repr.plot.width=5, repr.plot.height=5)
+library(packcircles)
+
+
+df<-percent(col="q7_online")
+
+  
+df<-data.frame(grp=paste(df$q7_online,"\n ",df$percent," %"),value=df$percent)
+packing <- circleProgressiveLayout(df$value, sizetype='area')
+df <- cbind(df, packing)
+
+dat.gg <- circleLayoutVertices(packing, npoints=100)
+
+ggplot() + 
+  geom_polygon(data = dat.gg, aes(x, y, group = id, fill=as.factor(id))) +scale_fill_manual(values= colors)+
+  geom_text(data = df, aes(x, y, size=value, label = grp),col="white")+scale_size_continuous(range = c(3,8))+ theme_void()+theme(legend.position = "none")+labs(title="Coverage of distance education delivery systems")+coord_equal()
+
+df<-percent(col="q7_radio")
+
+  
+df<-data.frame(grp=paste(df$q7_radio,"\n ",df$percent," %"),value=df$percent)
+packing <- circleProgressiveLayout(df$value, sizetype='area')
+df <- cbind(df, packing)
+
+dat.gg <- circleLayoutVertices(packing, npoints=100)
+
+ggplot() + 
+  geom_polygon(data = dat.gg, aes(x, y, group = id, fill=as.factor(id))) +scale_fill_manual(values= colors)+
+  geom_text(data = df, aes(x, y, size=value, label = grp),col="white")+scale_size_continuous(range = c(3,8))+ theme_void()+theme(legend.position = "none")+labs(title="Coverage of distance education delivery systems")+coord_equal()
+  
+  
+  
+  df<-percent(col="q7_tv")
+
+  
+df<-data.frame(grp=paste(df$q7_tv,"\n ",df$percent," %"),value=df$percent)
+packing <- circleProgressiveLayout(df$value, sizetype='area')
+df <- cbind(df, packing)
+
+dat.gg <- circleLayoutVertices(packing, npoints=100)
+
+ggplot() + 
+  geom_polygon(data = dat.gg, aes(x, y, group = id, fill=as.factor(id))) +scale_fill_manual(values= colors)+
+  geom_text(data = df, aes(x, y, size=value, label = grp),col="white")+scale_size_continuous(range = c(3,8))+ theme_void()+theme(legend.position = "none")+labs(title="Coverage of distance education delivery systems")+coord_equal()
+
+
+ df<-percent(col="q7_paper")
+
+  
+df<-data.frame(grp=paste(df$q7_paper,"\n ",df$percent," %"),value=df$percent)
+packing <- circleProgressiveLayout(df$value, sizetype='area')
+df <- cbind(df, packing)
+
+dat.gg <- circleLayoutVertices(packing, npoints=100)
+
+ggplot() + 
+  geom_polygon(data = dat.gg, aes(x, y, group = id, fill=as.factor(id))) +scale_fill_manual(values= colors)+
+  geom_text(data = df, aes(x, y, size=value, label = grp),col="white")+scale_size_continuous(range = c(3,8))+ theme_void()+theme(legend.position = "none")+labs(title="Coverage of distance education delivery systems")+coord_equal()
+
+
+```
+
+
+```{r}
+colnames(data)
+```
+
+
+```{r}
+levels(factor(data$q3_adj))
+```
+
+```{r}
+levels(factor(data$q3_adj_newend))
+```
+
+
+
+```{r plot_q8_measures_q9_open,  dev=c('png') }
+options(repr.plot.width=10, repr.plot.height=8)
+f1<-data %>%
+  dplyr::select(q8_measures)%>%
+  filter(!is.na(q8_measures))%>%
+  group_by(q8_measures)%>%
+  summarise(se_tot=n())%>%
+  mutate(se_percent=round(se_tot/sum(se_tot)*100,2))%>%
+  ggplot(aes(x="",y=se_percent,fill=q8_measures)) + geom_bar(stat='identity',width = 1) + 
+  coord_polar(theta="y") + theme_void() + theme(axis.text.x=element_blank(),legend.position='bottom') + scale_fill_manual(values=colors)+
+  geom_text(aes(y=c(5,10, 20, 30, 40, 43, 45),label = paste(q8_measures,": ",se_percent," %")),col="white")+labs(title="Access: Which measures have been taken \n to facilitate access of students to online\n  distance learning infrastructure?")
+
+
+f2<-data %>%
+  dplyr::select(q9_open)%>%
+  filter(!is.na(q9_open))%>%
+  group_by(q9_open)%>%
+  summarise(se_tot=n())%>%
+  mutate(se_percent=round(se_tot/sum(se_tot)*100,2))%>%
+  ggplot(aes(x="",y=se_percent,fill=q9_open)) + geom_bar(stat='identity',width = 1) + 
+  coord_polar(theta="y") + theme_void() + theme(axis.text.x=element_blank(),legend.position='bottom') +scale_fill_manual(values=colors)+
+  
+  geom_text(aes(y=c(12, 32, 43,44),label = paste(q9_open,": ",se_percent," %")),col="white")+labs(title=" What type of online learning \n platforms are used by teachers,\n  students and parents/caregivers \n while schools are closed?")
+grid.arrange(f1,f2,nrow=1,ncol=2)
+```
+
+
+
+```{r plot_q3_adj_newend_q3_adj,  dev=c('png')}
+
+options(repr.plot.width=10, repr.plot.height=8)
+f1<-data %>%
+  dplyr::select(q3_adj_newend)%>%
+  filter(!is.na(q3_adj_newend))%>%
+  group_by(q3_adj_newend)%>%
+  summarise(se_tot=n())%>%
+  mutate(se_percent=round(se_tot/sum(se_tot)*100,2))%>%
+  ggplot(aes(x="",y=se_percent,fill=q3_adj_newend)) + geom_bar(stat='identity',width = 1) + 
+  coord_polar(theta="y") + theme_void() + theme(axis.text.x=element_blank(),legend.position='bottom') + scale_fill_manual(values=colors)+
+  geom_text(aes(y=c(62, 38),label = paste(q3_adj_newend,": ",se_percent," %")),col="white")+labs(title="Are new teachers recruited for reopening?")
+
+
+f2<-data %>%
+  dplyr::select(q3_adj)%>%
+  filter(!is.na(q3_adj))%>%
+  group_by(q3_adj)%>%
+  summarise(se_tot=n())%>%
+  mutate(se_percent=round(se_tot/sum(se_tot)*100,2))%>%
+  ggplot(aes(x="",y=se_percent,fill=q3_adj)) + geom_bar(stat='identity',width = 1) + 
+  coord_polar(theta="y") + theme_void() + theme(axis.text.x=element_blank(),legend.position='bottom') +scale_fill_manual(values=colors)+
+  
+  geom_text(aes(y=c(2, 28,70),label = paste(q3_adj,": ",se_percent," %")),col="white")+labs(title=" Has the current school calendar been \n adjusted (or are there plans in place to \n adjust it)?")
+grid.arrange(f1,f2,nrow=1,ncol=2)
+
+```
+
+
+```{r plot_q3_adj_newend,  dev=c('png')}
+options(repr.plot.width=5, repr.plot.height=5)
+data %>% ggplot(aes(x=q3_adj_newend,fill=q3_adj_newend))+geom_bar(stat="count")+mytheme+labs(title="Are new teachers recruited for reopening?")+scale_fill_manual(values=colors)+theme(legend.position = "")
+```
+
+
+```{r plot_q4_reduce_q4_number,  dev=c('png')}
+
+options(repr.plot.width=10, repr.plot.height=4)
+
+p1<-percent(col="q4_reduce")%>%
+  ggplot(aes(x=reorder(q4_reduce,percent),y=percent,fill=q4_reduce))+geom_bar(stat="identity") +
+  theme(
+    axis.title=element_blank(),
+    
+    panel.grid = element_blank(),
+        legend.position = "none" )+ geom_text( aes(x=q4_reduce, y=percent, label=paste(percent,"%",sep=" - ")), color="white", fontface="bold",vjust=0.9 ) +
+scale_fill_manual(values=colors)+labs(title="Is there a plan to adjust the scope  \n of contents to be covered?")
+
+
+p2<-percent(col="q4_number")%>%ggplot(aes(x=reorder(q4_number,percent),y=percent,fill=q4_number))+geom_bar(stat="identity") +
+  theme(
+    axis.title=element_blank(),
+    
+    panel.grid = element_blank(),
+        legend.position = "none" )+ geom_text( aes(x=q4_number, y=percent, label=paste(percent,"%",sep=" - ")), color="white", fontface="bold",vjust=0.9 ) +scale_fill_manual(values=colors)+labs(title="Is there a plan to adjust the scope  \n of contents to be covered?")
+grid.arrange(p1,p2,nrow=1,ncol=2)
+
+```
+
+
+```{r plot_q6_radio_pp,  dev=c('png')}
+options(repr.plot.width=5, repr.plot.height=4)
+percent(col="q6_radio_pp")%>%
+  ggplot(aes(x=reorder(q6_radio_pp,percent),y=percent,fill=q6_radio_pp))+geom_bar(stat="identity") +
+  theme(
+    axis.title=element_blank(),
+    
+    panel.grid = element_blank(),
+        legend.position = "none" )+ geom_text( aes(x=q6_radio_pp, y=percent, label=paste(percent,"%",sep=" - ")), color="white", fontface="bold",vjust=0.9 ) +scale_fill_manual(values=colors)+labs(title="Types of delivery systems: Which of the \n following education delivery systems have \n been deployed as part of the national (or subnational) \n distance education strategy for \n different levels of education?")
+
+```
+
+
+```{r plot_q10_maintain_moe,  dev=c('png')}
+percent(col="q10_maintain_moe") %>%
+  ggplot(aes(x=reorder(q10_maintain_moe,percent),y=percent,fill=q10_maintain_moe))+geom_bar(stat="identity") +
+  theme(
+    axis.title=element_blank(),
+    
+    panel.grid = element_blank(),
+        legend.position = "none" )+ geom_text( aes(x=q10_maintain_moe, y=percent, label=paste(percent,"%",sep=" - ")), color="white", fontface="bold",vjust=0.9 ) +scale_fill_manual(values=colors)+labs(title="Who maintains/creates online   learning platforms that  can be used by teachers, \n students and parents/caregivers  while schools are closed?[Select all that apply]?")
+
+
+```
+
+```{r}
+data %>% 
+  group_by(q3_adj, q4_leave) %>% 
+  summarize(freq = n()) %>% 
+  ggplot(aes(reorder_within(q3_adj, -freq, q4_leave), y=freq, fill = factor(q4_leave))) +
+  geom_bar(stat = "identity") +
+  scale_x_reordered() +
+  facet_wrap(~ q4_leave, scales = "free") + 
+  scale_fill_viridis(discrete = TRUE, alpha=0.6, option="D") +
+  theme_minimal() +
+  labs(x = "q6_radio_pp_yes", y = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position="none") 
+```
+
+
+```{r}
+data %>%
+  group_by(q4) %>% 
+  summarize(freq = n()) %>% 
+  ggplot(aes(x = 2, y = freq, fill = q4)) +
+  geom_bar(stat = "identity", color = "white") +
+  coord_polar(theta = "y", start = 0)+
+  scale_fill_manual(values =colors) +
+  theme_void()+
+  xlim(0.3, 2.5) +
+  labs(x = "", y = "", fill = "Is there a plan to adjust the scope of contents to be covered?")
+```
+
+
+```{r}
+highchart(type = "map") %>%
+  hc_add_series_map(worldgeojson,
+                    data %>% 
+                      group_by(q6_radio_pp_yes) %>% 
+                      summarise(total = n()) %>% 
+                      ungroup() %>%
+                      mutate(iso2 = countrycode(q6_radio_pp_yes, origin="country.name", destination="iso2c", custom_match = c(0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 14))),
+                    value = "total", joinBy = "iso2") %>%
+  hc_title(text = "Which of the following education delivery systems have been deployed as part of the national (or subnational) distance education strategy for different levels of education? by country") %>%
+  hc_colorAxis(minColor = "#e8eded", maxColor = "#4c735e")
+```
+
+```{r}
+colnames(Variable_Name)
+```
+
+```{r}
+head(Variable_Name)
+```
+
+
+
+```{r}
+variable.names() %>% 
+  dplyr::select(Main_Question) %>% 
+  pivot_longer(cols = everything(), values_to = "Main_Question") %>% 
+  drop_na() %>% 
+  group_by(Main_Question) %>% 
+  summarize(freq = n()) %>% 
+  
+  ggplot(aes(reorder(Main_Question, -freq), freq)) +
+  geom_bar(stat = "identity", fill="steelblue", alpha = 0.5) +
+  theme_minimal() +
+  labs(x = "Main_Question", y = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="none") +
+  geom_text(aes(label = freq), vjust = -0.6, color = "gray20", size=3) 
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r figex, fig.width=3, fig.height=3, cache=TRUE, echo=TRUE, fig.cap="Narrow ggplot2 figure"}
+data$comments<-as.character(data$q1_pp_nc)
+
+tidy_comments<-data %>%unnest_tokens(word,q1_pp_nc)%>%anti_join(stop_words,by="word")
+wrd<-tidy_comments %>%count(word,sort=TRUE)%>%filter(!is.na(word))
+wordcloud2(wrd)
+```
+
+
+
+
+```{r}
+
+```
+
